@@ -2,7 +2,7 @@ name: Agentic Hello World
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, edited]
 
 permissions:
   pull-requests: write
@@ -12,20 +12,13 @@ jobs:
   agentic-agent:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Greet PR if commit message contains 'hello'
+      - name: Greet PR if title or body contains 'hello'
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
-            const commits = await github.rest.pulls.listCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number
-            });
-            if (commits.data.some(c => c.commit.message.toLowerCase().includes('hello'))) {
+            const msg = `${pr.title}\n${pr.body || ''}`.toLowerCase();
+            if (msg.includes('hello')) {
               await github.rest.issues.createComment({
                 ...context.repo,
                 issue_number: pr.number,
@@ -33,5 +26,5 @@ jobs:
               });
               console.log("Welcome comment posted!");
             } else {
-              console.log("No commit message contained 'hello'. No comment posted.");
+              console.log("No 'hello' found in PR title/body. No comment posted.");
             }
